@@ -1,4 +1,4 @@
-import { Divider, Menu, MenuItem } from "@material-ui/core";
+import { Menu, MenuItem } from "@material-ui/core";
 import Checkbox from "@material-ui/core/Checkbox";
 import IconButton from "@material-ui/core/IconButton";
 import InputAdornment from "@material-ui/core/InputAdornment";
@@ -14,6 +14,7 @@ import Typography from "@material-ui/core/Typography";
 import { Delete, Favorite, FavoriteBorder, MoreVert, Search } from "@material-ui/icons";
 import React, { useState } from "react";
 import _ from "lodash";
+import { FixedSizeList, ListChildComponentProps } from "react-window";
 import HistoryItem from "../types/HistoryItem";
 import FormControl from "@material-ui/core/FormControl";
 import { useHistory } from "../state";
@@ -45,6 +46,7 @@ const useStyles = makeStyles((theme) => ({
     display: "block",
     maxWidth: "90%",
     overflow: "hidden",
+    whiteSpace: "nowrap",
     textOverflow: "ellipsis",
   },
   small: {
@@ -61,7 +63,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const HistoryList: React.FC = () => {
+const HistoryList: React.FC<{ height: number }> = ({ height }) => {
   const classes = useStyles();
   const [history, { clearHistory, selectHistoryItem, removeHistoryItem }] = useHistory();
   const [anchorEl, setAnchorEl] = useState(null);
@@ -93,6 +95,56 @@ const HistoryList: React.FC = () => {
           historyItem.method.toLowerCase().includes(term) ||
           historyItem.body.toLowerCase().includes(term);
   });
+
+  const renderListItem = (props: ListChildComponentProps) => {
+    const { index, style } = props;
+    const historyItem = filteredHistory[index];
+    return (
+      <div style={style} key={historyItem.id}>
+        <Tooltip
+          arrow
+          enterDelay={250}
+          enterNextDelay={250}
+          classes={{ tooltip: classes.tooltip }}
+          title={<Typography variant="caption">{historyItem.url}</Typography>}
+          aria-label={historyItem.url}
+        >
+          <ListItem divider button alignItems="flex-start" onClick={() => selectHistoryItem(historyItem)}>
+            <ListItemText
+              primary={<div className={classes.trim}>{historyItem.path}</div>}
+              secondary={
+                <>
+                  <Typography component="span" variant="body2" className={classes.trim}>
+                    {historyItem.host}
+                  </Typography>
+                  <Chip
+                    className={classes.method}
+                    label={historyItem.method}
+                    color="primary"
+                    size="small"
+                    variant="outlined"
+                  />
+                  <Typography component="span" variant="caption" className={`${classes.trim} ${classes.date}`}>
+                    {historyItem.date}
+                  </Typography>
+                </>
+              }
+              secondaryTypographyProps={{
+                component: "span",
+              }}
+            />
+            <ListItemSecondaryAction className={classes.actions}>
+              {/* TODO implement "favourite" */}
+              {false && <Checkbox size="small" icon={<FavoriteBorder />} checkedIcon={<Favorite />} value={false} />}
+              <IconButton aria-label="delete" onClick={() => removeHistoryItem(historyItem)}>
+                <Delete fontSize="small" />
+              </IconButton>
+            </ListItemSecondaryAction>
+          </ListItem>
+        </Tooltip>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -130,52 +182,9 @@ const HistoryList: React.FC = () => {
 
       {/* HISTORY ITEMS */}
       <List dense>
-        {filteredHistory.map((historyItem) => (
-          <div key={historyItem.id}>
-            <ListItem dense button alignItems="flex-start" onClick={() => selectHistoryItem(historyItem)}>
-              <Tooltip
-                arrow
-                enterDelay={250}
-                enterNextDelay={250}
-                classes={{ tooltip: classes.tooltip }}
-                title={<Typography variant="caption">{historyItem.url}</Typography>}
-                aria-label={historyItem.url}
-              >
-                <ListItemText
-                  primary={<div className={classes.trim}>{historyItem.path}</div>}
-                  secondary={
-                    <>
-                      <Typography component="span" variant="body2" className={classes.trim}>
-                        {historyItem.host}
-                      </Typography>
-                      <Chip
-                        className={classes.method}
-                        label={historyItem.method}
-                        color="primary"
-                        size="small"
-                        variant="outlined"
-                      />
-                      <Typography component="span" variant="caption" className={`${classes.trim} ${classes.date}`}>
-                        {historyItem.date}
-                      </Typography>
-                    </>
-                  }
-                  secondaryTypographyProps={{
-                    component: "span",
-                  }}
-                />
-              </Tooltip>
-              <ListItemSecondaryAction className={classes.actions}>
-                {/* TODO implement "favourite" */}
-                {false && <Checkbox size="small" icon={<FavoriteBorder />} checkedIcon={<Favorite />} value={false} />}
-                <IconButton aria-label="delete" onClick={() => removeHistoryItem(historyItem)}>
-                  <Delete fontSize="small" />
-                </IconButton>
-              </ListItemSecondaryAction>
-            </ListItem>
-            <Divider variant="fullWidth" component="li" />
-          </div>
-        ))}
+        <FixedSizeList itemCount={filteredHistory.length} height={height} itemSize={100} width="100%">
+          {renderListItem}
+        </FixedSizeList>
       </List>
     </>
   );

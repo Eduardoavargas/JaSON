@@ -2,7 +2,7 @@ import Container from "@material-ui/core/Container";
 import Divider from "@material-ui/core/Divider";
 import { createMuiTheme, makeStyles } from "@material-ui/core/styles";
 import { ThemeProvider } from "@material-ui/styles";
-import React from "react";
+import React, { useCallback, useState } from "react";
 import "typeface-source-code-pro";
 import "typeface-roboto";
 import CssBaseline from "@material-ui/core/CssBaseline";
@@ -76,6 +76,15 @@ const App = () => {
     palette: palette[theme],
   });
 
+  const [height, setHeight] = useState(0);
+  const measureRef = useCallback((node) => {
+    if (node !== null) {
+      const height = node.getBoundingClientRect().height - 64 - 32;
+      console.log("height: %s", height);
+      setHeight(height);
+    }
+  }, []);
+
   return (
     <ThemeProvider theme={muiTheme}>
       <CssBaseline />
@@ -87,8 +96,8 @@ const App = () => {
             <Divider className={classes.divider} />
             <ResponseFields />
           </Grid>
-          <Grid item xs={4} xl={3} className={classes.gridColumnRight}>
-            <HistoryList />
+          <Grid item xs={4} xl={3} className={classes.gridColumnRight} ref={measureRef}>
+            <HistoryList height={height} />
           </Grid>
         </Grid>
       </Container>
